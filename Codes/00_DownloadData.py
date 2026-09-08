@@ -31,7 +31,7 @@ import numpy as np
 import time
 t0 = time.time() # Initial time
 #---------------------------  MAIN CONFIGURATIONS ----------------------------
-# Global Variables
+# Global Variabless
 VERBOSE_MODE = False
 fDowloadAnalysisResults = True # if 
 fDowloadAO2D = True
