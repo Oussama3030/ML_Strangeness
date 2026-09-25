@@ -1,0 +1,67 @@
+
+==============================================================================
+MOMENTUM SPECTRA
+==============================================================================
+  sample           n   median     mean      q05      q95  frac>4GeV
+  S_MC          1396     7.01     8.15     1.94    17.49      0.766
+  B_MC         59336     2.46     3.90     0.66    11.80      0.320
+  B_DATA     4616750     1.67     1.84     0.58     3.66      0.034
+  D_IN        712966     1.59     1.73     0.65     3.25      0.018
+
+  pT-spectrum overlap  S_MC vs B_DATA : 0.548   (1 = identical, 0 = disjoint)
+  76% of the MC signal is above 4 GeV/c;  only 3% of the data background is.
+  B_MC and B_DATA agree far better with each other than either does with
+  S_MC, so this is the MC generator/production, not the detector.
+
+==============================================================================
+TEST 1: reweight the background onto the signal pT spectrum
+==============================================================================
+
+  -- all 16 features --
+                                       unweighted   pT-matched    delta
+  A  S_MC vs B_DATA (pipeline)             1.0000       0.9999  -0.0000
+  B  S_MC vs B_MC   (MC only)              0.9555       0.9528  -0.0027
+
+  -- 14 features, sign-flipped photon DCAs removed --
+                                       unweighted   pT-matched    delta
+  A  S_MC vs B_DATA (pipeline)             0.9666       0.8533  -0.1133
+  B  S_MC vs B_MC   (MC only)              0.9543       0.9549  +0.0007
+
+==============================================================================
+TEST 2: retrain inside narrow pT slices
+==============================================================================
+  Inside a slice both classes have nearly the same momentum, so the spectrum
+  mismatch cannot be used.  Whatever AUC survives is the part that is not
+  kinematics.  C(placebo) = B_MC vs B_DATA still has no physics difference at
+  all, so it remains the yardstick for "this is an artefact".
+
+  -- all 16 features --
+  pT slice       n_sig   n_used    A(pipe)  B(MC only)  C(placebo)
+  1-2               66   skipped (n_sig=66, n_bkgD=2136837, n_bkgM=16591)
+  2-3              113   skipped (n_sig=113, n_bkgD=1134909, n_bkgM=10732)
+  3-4              136     4000     0.9976      0.8897      0.9999
+  4-6              264     4000     1.0000      0.9517      0.9998
+  6-9              282     4000     0.9997      0.9716      0.9998
+  9-14             305     2320     0.9962      0.9784      0.9993
+
+  -- 14 features, sign-flipped photon DCAs removed --
+  pT slice       n_sig   n_used    A(pipe)  B(MC only)  C(placebo)
+  1-2               66   skipped (n_sig=66, n_bkgD=2136837, n_bkgM=16591)
+  2-3              113   skipped (n_sig=113, n_bkgD=1134909, n_bkgM=10732)
+  3-4              136     4000     0.8329      0.8942      0.7122
+  4-6              264     4000     0.8844      0.9430      0.7901
+  6-9              282     4000     0.9256      0.9723      0.8592
+  9-14             305     2320     0.9229      0.9824      0.8833
+
+==============================================================================
+WHAT IS THE MC SAMPLE?
+==============================================================================
+  MC file: 67689 candidates in 1 dataframe, 1396 PDG-matched L*
+  fIsProducedByGenerator  : {True: 1396}
+  fMCprocess              : {0: 1396}
+  fPDGCodeMother          : {0: 1396}
+
+  All 1396 are generator-produced primaries with mother PDG 0.  A generated
+  L* spectrum peaking near 7 GeV/c is not minimum bias -- it is a
+  signal-enhanced / pT-hardened production.  Training it against a
+  minimum-bias data background hands the BDT that difference for free.

@@ -1,0 +1,59 @@
+
+==============================================================================
+1. THE OPENING ANGLE IS A MASS VARIABLE
+==============================================================================
+  corr(fOPAngle, fLStarMass) in data          : +0.5622
+  same, in a narrow pT slice (1.5-2.5 GeV/c)  : +0.7206
+
+  Median fOPAngle of data candidates, by mass region:
+    below window   [0.00, 1.45)  n =  1019263   median fOPAngle = 0.610
+    INSIDE window  [1.45, 1.59)  n =   712965   median fOPAngle = 1.082
+    above window   [1.59, 3.00)  n =  3256366   median fOPAngle = 1.836
+
+  fOPAngle single-feature AUC, S_MC vs B_DATA : 0.9429  (bias_02)
+  It is the strongest "physics" feature in the list, and it is precisely the
+  variable the background selection was made on.
+
+==============================================================================
+2. SAME DATA, BACKGROUND NOT SELECTED ON MASS
+==============================================================================
+  D_IN is data inside 1.45-1.59.  It is the same combinatorics as B_DATA
+  (L* -> Lambda gamma is far too rare to matter here), but it was never
+  selected on mass.  If the classifier were learning physics, swapping
+  B_DATA -> D_IN would change little.
+
+                                                     all 16  DCA-fixed
+  S_MC vs B_DATA  (sideband bkg, the pipeline)       1.0000     0.9665
+  S_MC vs D_IN    (in-window bkg, same data)         1.0000     0.9620
+
+  and with fOPAngle also removed:
+  S_MC vs B_DATA  (13 features, no fOPAngle)         0.9129
+  S_MC vs D_IN    (13 features, no fOPAngle)         0.9429
+
+==============================================================================
+3. WHAT THE MODEL DOES WHEN IT MEETS REAL DATA
+==============================================================================
+  Train exactly as the pipeline does (S_MC vs sideband data), then apply the
+  model to ALL data, including the mass window it never saw.  The data holds
+  no meaningful L* signal at this level, so a healthy model should keep a
+  sensible fraction of candidates and NOT change the mass shape.
+
+  -- all 16 features (as trained) --
+  fraction of data candidates with P > 0.5 : 0.000034
+           working point  threshold  eff outside   eff inside     in/out
+           keep top 100%    -1.0000      1.00000      1.00000      1.000
+            keep top 10%     0.0027      0.09849      0.10967      1.113
+             keep top 1%     0.0202      0.01042      0.00728      0.698
+           keep top 0.1%     0.0791      0.00105      0.00068      0.642
+
+  -- 14 features, photon DCAs removed --
+  fraction of data candidates with P > 0.5 : 0.001057
+           working point  threshold  eff outside   eff inside     in/out
+           keep top 100%    -1.0000      1.00000      1.00000      1.000
+            keep top 10%     0.0220      0.09853      0.10944      1.111
+             keep top 1%     0.1847      0.00978      0.01145      1.171
+           keep top 0.1%     0.5072      0.00096      0.00124      1.286
+
+  "in/out" is the factor by which the BDT preferentially keeps candidates
+  whose mass falls in the signal window.  1.00 = no sculpting; > 1 means the
+  cut alone builds a bump at 1.52 out of pure background.

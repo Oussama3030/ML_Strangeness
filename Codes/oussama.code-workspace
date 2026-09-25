@@ -1,0 +1,18 @@
+{
+	"folders": [
+		{
+			"path": "../../../.."
+		},
+		{
+			"path": ".."
+		}
+	],
+	"settings": {
+		"python.analysis.diagnosticSeverityOverrides": {
+			"reportMissingImports": "none",
+			"reportMissingModuleSource": "none",
+			"reportUnusedImport": "none",
+			"reportUndefinedVariable": "none"
+		}
+	}
+}

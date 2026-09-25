@@ -1,0 +1,45 @@
+
+==============================================================================
+BINNING
+==============================================================================
+  pT bins: 1, 2, 3, 4, 5.2, 7, 10, 14, 20
+
+  signal candidates per bin:
+        1 - 2         66   (median uncertainty ~ 15% of the IQR)
+        2 - 3        113   (median uncertainty ~ 12% of the IQR)
+        3 - 4        136   (median uncertainty ~ 11% of the IQR)
+        4 - 5.2      156   (median uncertainty ~ 10% of the IQR)
+      5.2 - 7        213   (median uncertainty ~ 9% of the IQR)
+        7 - 10       254   (median uncertainty ~ 8% of the IQR)
+       10 - 14       228   (median uncertainty ~ 8% of the IQR)
+       14 - 20       211   (median uncertainty ~ 9% of the IQR)
+
+  Bins below NMIN are dropped: {'S_MC': 50, 'other': 500}
+
+  Error bars are 1 sigma for both statistics, inflated by sqrt(n/n_eff) where
+  n_eff counts distinct V0s rather than candidates.  In the MC signal the
+  1396 candidates come from only 644 distinct Lambda V0s and 651 distinct
+  photon V0s, so for fLambda*/fPhoton* variables the honest error is about
+  1.47x larger than sqrt(n) would suggest.
+
+  S_MC     n =     1396
+  B_MC     n =    59336
+  B_DATA   n =   600000
+  D_IN     n =   600000
+
+  [saved] Individual/fLambdaCosPA_{mean,median}.png
+  [saved] Individual/fDCADaughters_{mean,median}.png
+  [saved] Individual/fLambdaAlpha_{mean,median}.png
+  [saved] Individual/fLambdaDCANegPV_{mean,median}.png
+  [saved] Individual/fLambdaDCAPosPV_{mean,median}.png
+  [saved] Individual/fLambdaLifeTime_{mean,median}.png
+  [saved] Individual/fLambdaQt_{mean,median}.png
+  [saved] Individual/fLambdaRadius_{mean,median}.png
+  [saved] Individual/fPhotonAlpha_{mean,median}.png
+  [saved] Individual/fPhotonCosPA_{mean,median}.png
+  [saved] Individual/fPhotonDCADau_{mean,median}.png
+  [saved] Individual/fPhotonDCANegPV_{mean,median}.png
+  [saved] Individual/fPhotonDCAPosPV_{mean,median}.png
+  [saved] Individual/fPhotonQt_{mean,median}.png
+  [saved] Individual/fPhotonRadius_{mean,median}.png
+  [saved] Individual/fOPAngle_{mean,median}.png

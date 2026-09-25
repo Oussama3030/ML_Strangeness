@@ -1,0 +1,51 @@
+
+==============================================================================
+BUILDING SAMPLES
+==============================================================================
+  S_MC        1396 candidates
+  B_MC       40000 candidates
+  B_DATA     40000 candidates
+  D_IN       40000 candidates
+
+  S_MC   : MC, |fPDGCode| == 3124
+  B_MC   : MC, not a true L*, mass in the same sidebands as B_DATA
+  B_DATA : data, mass in sidebands (< 1.45 or > 1.59)
+  D_IN   : data, mass INSIDE the window (control, never trained on)
+
+==============================================================================
+TRAININGS  (Run 3 hyperparameters, Run 3 features, 70/30 split)
+==============================================================================
+  A  S_MC vs B_DATA  (the pipeline)                    AUC = 0.9994   (n = 1396 + 1396)
+  B  S_MC vs B_MC    (honest, MC only)                 AUC = 0.9552   (n = 1396 + 1396)
+  C  B_MC vs B_DATA  (placebo: no physics difference)  AUC = 0.9999   (n = 20000 + 20000)
+
+  A - B = +0.0442   how much of the pipeline AUC is NOT reproducible
+             within a single origin
+  C     = 0.9999   AUC obtainable with zero physics difference
+             (0.5 = MC and data indistinguishable, 1.0 = trivially separable)
+
+==============================================================================
+PLACEBO ON SPECTATOR VARIABLES (never given to the BDT)
+==============================================================================
+  Same B_MC vs B_DATA question, but using only tracking-quality variables
+  (TPC crossed rows, ITS clusters/chi2, nsigma, eta).  These carry no L*
+  physics whatsoever, so an AUC far from 0.5 means MC and data are simply
+  different detectors as far as any classifier is concerned.
+
+  spectator-only  B_MC vs B_DATA   AUC = 0.9119   (17 variables)
+
+==============================================================================
+NEGATIVE CONTROL: labels shuffled
+==============================================================================
+  S_MC vs B_DATA with randomised labels   AUC = 0.4960
+  (must sit at ~0.5; if not, the split itself leaks)
+
+==============================================================================
+VERDICT
+==============================================================================
+  C = 1.000: MC and data backgrounds are almost perfectly separable with
+  the training features alone.  The classifier does not need any L* physics
+  to reproduce most of the headline separation -- "MC or not" is enough.
+
+  Honest in-domain performance (B) = 0.9552
+  Pipeline performance        (A) = 0.9994

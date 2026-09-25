@@ -1,0 +1,37 @@
+
+==============================================================================
+THE LADDER
+==============================================================================
+  configuration                                             AUC
+  0  as trained (S_MC vs data sideband)                  0.9999
+  1  + group-aware train/test split                      0.9999
+  2  + pos/neg daughter swap repaired                    0.9539
+  3  + background pT-matched to the signal               0.8796
+  4  + background from MC (no data/MC shift)             0.9397
+  5  + background NOT selected on mass  <-- honest       0.9441
+
+  drop from rung 0 to rung 5 : -0.0558
+
+  The ladder is not monotonic, and that is real: rung 4 swaps the data
+  background for an MC one, and combinatorial background inside a
+  signal-enhanced MC production is not the same mixture as combinatorial
+  background in minimum-bias data.  Rung 5 is honest about ORIGIN, but its
+  background still comes from MC, so it is an upper bound on what the
+  classifier will do on real data, not a guarantee.
+
+==============================================================================
+CHECK: DOES THE REPAIR REMOVE THE SIMULATION/DATA HANDLE?
+==============================================================================
+  The placebo training (MC background vs data background) has no physics
+  difference in it, so its AUC is a direct readout of how much bookkeeping
+  the classifier can still exploit.
+
+  placebo B_MC vs B_DATA, before repair : AUC = 0.9999
+  placebo B_MC vs B_DATA, after repair  : AUC = 0.7526
+
+  Per-variable, MC vs data background (1.000 = perfectly separable):
+  variable                   before      after
+  fPhotonDCAPosPV            0.8963     0.5188
+  fPhotonDCANegPV            0.8320     0.5589
+  fLambdaDCAPosPV            0.5859     0.5016
+  fLambdaDCANegPV            0.5871     0.5054

@@ -1,0 +1,65 @@
+
+==============================================================================
+SINGLE-FEATURE SEPARATION POWER
+==============================================================================
+  A = S_MC vs B_DATA (pipeline)   B = S_MC vs B_MC (physics only)   C = B_MC vs B_DATA (origin only)
+  ovl = MC/data histogram overlap for background only (1 = perfect agreement)
+
+        feature  A_pipeline  B_physics  C_origin  KS_mc_data  ovl_mc_data
+fPhotonDCAPosPV      0.8871     0.7425    0.8942      0.8812       0.1789
+fPhotonDCANegPV      0.9438     0.6278    0.8305      0.8192       0.1642
+  fLambdaRadius      0.7176     0.6160    0.5964      0.1486       0.8505
+fLambdaDCAPosPV      0.5957     0.5061    0.5846      0.1439       0.8626
+fLambdaDCANegPV      0.5943     0.5063    0.5845      0.1464       0.8582
+fLambdaLifeTime      0.6874     0.6049    0.5829      0.1350       0.8640
+  fDCADaughters      0.6530     0.7003    0.5648      0.1163       0.8851
+   fLambdaCosPA      0.6957     0.6209    0.5594      0.1776       0.9244
+  fPhotonDCADau      0.5974     0.5573    0.5360      0.0821       0.8772
+  fPhotonRadius      0.5330     0.5577    0.5253      0.0706       0.9181
+   fPhotonCosPA      0.6023     0.6129    0.5206      0.0688       0.9339
+      fPhotonQt      0.5155     0.5356    0.5195      0.0311       0.9606
+   fPhotonAlpha      0.5031     0.5096    0.5104      0.0303       0.9526
+      fLambdaQt      0.5085     0.5016    0.5071      0.0172       0.9610
+   fLambdaAlpha      0.5046     0.5079    0.5038      0.0276       0.9406
+       fOPAngle      0.9429     0.9500    0.5004      0.0255       0.9518
+
+  Features whose MC/data mismatch alone gives AUC > 0.70  (2 of 16):
+    fPhotonDCAPosPV      C = 0.894   overlap = 0.179
+    fPhotonDCANegPV      C = 0.831   overlap = 0.164
+
+==============================================================================
+ABLATION: drop the worst MC/data offenders one by one
+==============================================================================
+  Each row retrains A (pipeline) and C (placebo) after removing the listed
+  features.  If A stays high only while C stays high, A is riding on C.
+
+  features used                             A(pipe) C(placebo)
+  all 16                                     0.9994     0.9999
+  -fPhotonDCAPosPV                           0.9943     0.9952
+  -fPhotonDCAPosPV, fPhotonDCANegPV          0.9571     0.7565
+  -fPhotonDCAPosPV, fPhotonDCANegPV, fLa     0.9507     0.7358
+  -fPhotonDCAPosPV, fPhotonDCANegPV, fLa     0.9519     0.7329
+  -fPhotonDCAPosPV, fPhotonDCANegPV, fLa     0.9516     0.7172
+  -fPhotonDCAPosPV, fPhotonDCANegPV, fLa     0.9517     0.7133
+
+==============================================================================
+ROOT CAUSE: THE POSITIVE AND NEGATIVE DAUGHTER ARE INTERCHANGED
+==============================================================================
+  Median DCA-to-primary-vertex, sentinel (999) excluded:
+
+  variable                     S_MC         B_MC       B_DATA
+  fPhotonDCAPosPV            +3.453       +8.673       -8.160
+  fPhotonDCANegPV            -3.331       -8.515       +8.269
+  fLambdaDCAPosPV            +0.114       +0.119       -0.142
+  fLambdaDCANegPV            -0.116       -0.122       +0.150
+
+  Both MC columns carry one sign and both data columns the other.  A single
+  threshold at zero therefore tells simulation from data almost perfectly,
+  which is exactly the C = 0.9999 of bias_01.
+
+  Swapping the Pos/Neg columns in the MC removes it:
+  variable                 C before      C after
+  fPhotonDCAPosPV            0.8942       0.5210
+  fPhotonDCANegPV            0.8305       0.5579
+  fLambdaDCAPosPV            0.5846       0.5019
+  fLambdaDCANegPV            0.5845       0.5042

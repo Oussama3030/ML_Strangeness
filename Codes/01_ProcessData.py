@@ -31,29 +31,77 @@ import time
 t0 = time.time() # Initial time
 
 #---------------------------  MAIN CONFIGURATIONS ----------------------------
-fSplitTrainTest = True   # if true, perform train/test/validation split. 
-fSeparateAO2Ds = False   # else if true, merge signal and bacgkround ao2ds, then perform perform train/test/validation split
+fSplitTrainTest = False  # if true, perform train/test/validation split. 
+fSeparateAO2Ds = True    # else if true, merge signal and bacgkround ao2ds, then perform perform train/test/validation split
                          # else, the entire input dataset is converted to an unique .parquet file
 
 # Number of signal and bkg candidates in the total dataset (before splitting)
-NSignal = 100000
-NBkg = 100000
+NSignal = 2600
+NBkg = 20000
 
 
 ##--------------------------------- PATHS ------------------------------------
 # Change these paths to ones in your own machine!
-MAIN_PATH = '/home/jesgum/ML_Strangeness/'
-TABLES_TO_KEEP = [] # Tables with training variables that needs to be accessed e.g. O2tracks
-
+MAIN_PATH = '/home/oussama/O2WorkingDirectory/RunAnalysisLambdaStar/ML_Strangeness/'
+TABLES_TO_KEEP = ['O2sigma0cores', 'O2sigma0lambda', 'O2sigma0photon', 'O2sigma0mccores'] # Tables with training variables that needs to be accessed e.g. O2tracks
+  
 ##--------------------------------- DATASET ----------------------------------
-DatasetName = 'AO2DMerged' # .root TTree from O2Physics 
-OutputPrefix = "MCharm"
+DatasetName = 'Dataset/Raw/AO2DMerged.root' # .root TTree from O2Physics 
+OutputPrefix = "LambdaStar"
 
-SignalFile = 'AO2DMerged_Signal'
-BackgroundFile = 'AO2DMerged_Background'
+SignalFile = 'Dataset/Raw/AO2DMerged_Sig.root'     # MC: signal = candidates PDG-matched to the L*
+BackgroundFile = 'Dataset/Raw/AO2DMerged_Bkg.root' # data: background = candidates in the mass sidebands
 
-Class_name = "fIsCorrectlyAssoc" # Class name (target)
+Class_name = "fIsLStar" # Class name (target)
 
+LStarPDG = 3124
+
+# Background is taken from data OUTSIDE this invariant mass window
+MassWindowMin = 1.45
+MassWindowMax = 1.59
+
+# Stop reading a file after this many raw candidates (0 = read it all).
+NRowsSignalRead = 0
+NRowsBkgRead = 2000000
+
+def add_signal_lstar(data_frame):
+  if 'fPDGCode' not in data_frame.columns: # data: no MC table, class is set by hand later
+    data_frame[Class_name] = False
+    return data_frame
+  data_frame[Class_name] = np.abs(data_frame['fPDGCode']) == LStarPDG
+  return data_frame
+
+def add_opening_angle(data_frame):
+  dot = (data_frame['fPhotonPx'] * data_frame['fLambdaPx']
+         + data_frame['fPhotonPy'] * data_frame['fLambdaPy']
+         + data_frame['fPhotonPz'] * data_frame['fLambdaPz'])
+  magPhoton = np.sqrt(data_frame['fPhotonPx']**2 + data_frame['fPhotonPy']**2 + data_frame['fPhotonPz']**2)
+  magLambda = np.sqrt(data_frame['fLambdaPx']**2 + data_frame['fLambdaPy']**2 + data_frame['fLambdaPz']**2)
+  ptot = magPhoton * magLambda
+  arg = np.divide(dot, ptot, out=np.zeros_like(dot, dtype=float), where=ptot > 0)
+  arg = np.clip(arg, -1.0, 1.0)
+  data_frame['fOPAngle'] = np.arccos(arg)
+  return data_frame
+
+def add_lstar_mass(data_frame):
+  #   M = sqrt( (E_photon + E_Lambda)^2 - |p_photon + p_Lambda|^2 )
+  MassPhoton = 0.0            
+  MassLambda = 1.115683 
+  ePhoton = np.sqrt(data_frame['fPhotonPx']**2 + data_frame['fPhotonPy']**2 + data_frame['fPhotonPz']**2 + MassPhoton**2)
+  eLambda = np.sqrt(data_frame['fLambdaPx']**2 + data_frame['fLambdaPy']**2 + data_frame['fLambdaPz']**2 + MassLambda**2)
+  E = ePhoton + eLambda
+  px = data_frame['fPhotonPx'] + data_frame['fLambdaPx']
+  py = data_frame['fPhotonPy'] + data_frame['fLambdaPy']
+  pz = data_frame['fPhotonPz'] + data_frame['fLambdaPz']
+  m2 = E**2 - (px**2 + py**2 + pz**2)
+  data_frame['fLStarMass'] = np.sqrt(np.clip(m2, 0.0, None))
+  return data_frame
+
+def add_lstar_pt(data_frame):
+  px = data_frame['fPhotonPx'] + data_frame['fLambdaPx']
+  py = data_frame['fPhotonPy'] + data_frame['fLambdaPy']
+  data_frame['fLStarPt'] = np.sqrt(px**2 + py**2)
+  return data_frame
 
 def filter_df(data_frame):
   """
@@ -63,7 +111,7 @@ def filter_df(data_frame):
   """
   return data_frame
 
-def create_pd_df(dataset_name, n_req_cands):
+def create_pd_df(dataset_name, n_rows_max=0):
   rfile = uproot.open(MAIN_PATH+"{}".format(dataset_name))
 
   # Get the list of directories (TDirectory) in the ROOT file
@@ -85,22 +133,41 @@ def create_pd_df(dataset_name, n_req_cands):
   print('[INFO]: The input dataset has {} groups'.format(len(group_names)))
   print('[INFO]: The input dataset has {} keys'.format(len(keys)))
 
-  # Creating Pandas dataframes from TTrees 
-  iteraction = 0
+  # Creating Pandas dataframes from TTrees
+  tables_per_directory = {}
   for dir in group_names:
-    tree = rfile[dir]
+    tables_per_directory.setdefault(dir.split('/')[0], []).append(dir)
 
-    if iteraction==0:
-      dataframeFinal = tree.arrays(library='pd')
+  dataframesPerDirectory = []
+  for directory, table_names in tables_per_directory.items():
+    tables = [rfile[t].arrays(library='pd') for t in table_names]
+    tables = [t for t in tables if len(t) > 0] # e.g. O2sigma0mccores is present but empty in data
 
-    else:
-      dataframe = tree.arrays(library='pd')
-      dataframeFinal = pd.concat([dataframeFinal, dataframe],axis=0)
+    nrows = {len(t) for t in tables}
+    if len(nrows) > 1:
+      raise ValueError(
+          '[ERROR]: tables in {} have different lengths {} and cannot be joined '
+          'column-wise: {}'.format(directory, sorted(nrows), table_names))
 
-    iteraction = iteraction + 1
+    dataframesPerDirectory.append(pd.concat(tables, axis=1))
 
-    if len(filter_df(dataframeFinal)) > n_req_cands:
-      return filter_df(dataframeFinal)
+    if n_rows_max > 0 and sum(len(d) for d in dataframesPerDirectory) >= n_rows_max:
+      print('[INFO]: stopping after {} directories ({} candidates read)'.format(
+          len(dataframesPerDirectory), sum(len(d) for d in dataframesPerDirectory)))
+      break
+
+  dataframeFinal = pd.concat(dataframesPerDirectory, axis=0, ignore_index=True)
+  del dataframesPerDirectory
+
+  if 'fPhotonPx' not in dataframeFinal.columns:
+    raise ValueError('[ERROR]: {} has no O2sigma0cores table: without it there are no candidate '
+                     'momenta, so the invariant mass, fOPAngle and fDCADaughters cannot be built. '
+                     'Add "AOD/SIGMA0CORES/0" to the OutputDirector and reproduce this AO2D.'.format(dataset_name))
+    
+  dataframeFinal = add_opening_angle(dataframeFinal)
+  dataframeFinal = add_signal_lstar(dataframeFinal)
+  dataframeFinal = add_lstar_mass(dataframeFinal)
+  dataframeFinal = add_lstar_pt(dataframeFinal)
 
   print("\n_________________________________________")
   print('[INFO]: Dataframe created for {}'.format(dataset_name))
@@ -142,18 +209,28 @@ def main():
   elif fSeparateAO2Ds:
     # LOADING DATA 
 
-    dataframeSignalFinal = create_pd_df(SignalFile, NSignal)
-    dataframeBkgFinal = create_pd_df(BackgroundFile, NBkg)
+    dataframeSignalFinal = create_pd_df(SignalFile, NRowsSignalRead)
+    dataframeBkgFinal = create_pd_df(BackgroundFile, NRowsBkgRead)
+
+    # Signal: MC candidates matched to the L*. Background: data candidates in the mass sidebands.
+    dataframeSignalFinal = dataframeSignalFinal[np.abs(dataframeSignalFinal['fPDGCode']) == LStarPDG]
+    dataframeBkgFinal = dataframeBkgFinal[(dataframeBkgFinal['fLStarMass'] < MassWindowMin)
+                                          | (dataframeBkgFinal['fLStarMass'] > MassWindowMax)]
+
+    # Keep only the columns both samples have (data carries no MC columns)
+    CommonColumns = [c for c in dataframeSignalFinal.columns if c in dataframeBkgFinal.columns]
+    dataframeSignalFinal = dataframeSignalFinal[CommonColumns]
+    dataframeBkgFinal = dataframeBkgFinal[CommonColumns]
 
     print("\n-------------------------------------------")
     print('[INFO]: The input dataset has a total of {} signal candidates, {} will be selected: '.format(len(dataframeSignalFinal), NSignal))
     print('[INFO]: The input dataset has a total of {} Bkg candidates, {} will be selected'.format(len(dataframeBkgFinal), NBkg))
     
     # Creating training, validation and testing sets:
-    SignalCandidates = dataframeSignalFinal.sample(n=NSignal, random_state=42)
-    BkgCandidates = dataframeBkgFinal.sample(n=NBkg, random_state=42)
-    SignalCandidates["fIsCorrectlyAssoc"] = True
-    BkgCandidates["fIsCorrectlyAssoc"] = False
+    SignalCandidates = dataframeSignalFinal.sample(n=min(NSignal, len(dataframeSignalFinal)), random_state=42)
+    BkgCandidates = dataframeBkgFinal.sample(n=min(NBkg, len(dataframeBkgFinal)), random_state=42)
+    SignalCandidates["fIsLStar"] = True
+    BkgCandidates["fIsLStar"] = False
 
     # Split signal
     Signal_TrainVal, Signal_Test = train_test_split(SignalCandidates, test_size=0.30, random_state=42)
@@ -177,7 +254,7 @@ def main():
     Data_Val.to_csv(MAIN_PATH + f"Dataset/Processed/{OutputPrefix}_Val.csv")
 
     print("\n-------------------------------------------")
-    print("[INFO]: Train set class distribution:\n{}".format(Data_Train["fClass"].value_counts()))
+    print("[INFO]: Train set class distribution:\n{}".format(Data_Train["fIsLStar"].value_counts()))
 
     print("\n-------------------------------------------")
     print('[INFO]: Train set total size: {}'.format(len(Data_Train)))

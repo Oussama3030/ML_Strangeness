@@ -1,0 +1,57 @@
+
+==============================================================================
+WHERE DOES THE DATA BACKGROUND ACTUALLY END?
+==============================================================================
+  n = 4616750 sideband candidates
+    q0.5      =    1.67 GeV/c   (2308375 candidates above)
+    q0.9      =    3.08 GeV/c   (461675 candidates above)
+    q0.95     =    3.66 GeV/c   (230838 candidates above)
+    q0.99     =    5.16 GeV/c   (46168 candidates above)
+    q0.999    =    8.07 GeV/c   (4617 candidates above)
+    q0.9999   =   13.09 GeV/c   (462 candidates above)
+    q1        =  125.79 GeV/c   (0 candidates above)
+
+  The "data maximum" is a single outlier at 125.8 GeV/c; matching it would
+  cut nothing at all.  Any useful cut has to sit near where the data still
+  has statistics, i.e. 3-5 GeV/c -- and that is where most of the MC signal
+  is NOT.  77% of the MC signal sits above 4 GeV/c.
+
+==============================================================================
+SCAN OVER THE MAXIMUM-pT CUT
+==============================================================================
+       cut   n_sig  overlap     medMC   medDATA   cut only cut+reweight    placebo
+        <2      78   skipped (too few)
+        <3     191    0.622      2.21      1.55     0.8203       0.7761     0.6714
+        <4     327    0.538      2.78      1.63     0.8406       0.7605     0.6873
+        <5     454    0.467      3.28      1.65     0.8769       0.8187     0.6899
+        <6     591    0.414      3.76      1.66     0.9017       0.8169     0.6894
+       <20    1389    0.247      6.99      1.67     0.9623       0.8675     0.7513
+
+  (cut = 20 is "no cut": the MC generator range, shown for reference)
+
+==============================================================================
+WHAT THE NUMBERS SAY
+==============================================================================
+  At a 4 GeV/c cut:
+    signal left        : 327 of 1396 candidates (77% thrown away)
+    spectra overlap    : 0.538  (1 = identical shapes)
+    AUC cut only       : 0.8406
+    AUC cut + reweight : 0.7605   <- the cut alone leaves +0.080
+    AUC placebo        : 0.6873   <- still no physics in it
+
+  For comparison, no cut at all but reweighted: 0.8675
+
+  A maximum-pT cut fixes the RANGE but not the SHAPE.  Truncating a flat
+  spectrum at 4 GeV/c leaves a flat spectrum in [0, 4]; the data background
+  is still falling steeply across that same window, so "hard or soft?"
+  remains available and the placebo stays well above 0.5.
+
+  It also costs most of the signal, and it costs it exactly where the
+  analysis is most interesting: after the cut the model has never seen a
+  high-pT L*, so it cannot be applied above the cut at all.
+
+  Reweighting keeps every candidate and matches the shape, so it dominates
+  the cut on both axes.  If a cut is wanted anyway, the honest version is a
+  LOWER bound as well -- train inside a window where both samples have
+  statistics -- or, better, train in pT bins, which the task already
+  supports (it plots AUC vs pT).

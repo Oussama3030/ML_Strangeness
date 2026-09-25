@@ -46,20 +46,22 @@ fCreateNewrun = True # if True, creates a directory in 'ML_Strangeness/Workflow_
 NOptunaTrials = 10 # number of Optuna trials - modify it according to your needs (and resources)! 
 
 # Please, include a short description of this Run:
-RunDescription = "Example Run. Hello World!"
+RunDescription = "Data: 20 , MC: 2.6k, removed lambda cospa, radius and lifetime"
 
 ##--------------------------------- PATHS ------------------------------------
 # Change these paths to ones in your own machine!
-MAIN_PATH = '/storage1/liveraro/ML_Strangeness/'
+MAIN_PATH = '/home/oussama/O2WorkingDirectory/RunAnalysisLambdaStar/ML_Strangeness/'
 RESULTS_PATH = MAIN_PATH + 'Results/'
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 ##--------------------------------- DATASET ------------------------------------
-DatasetName = "Example" # Input prefix, "OutputPrefix" in 04_HyperparameterTuning!!
-Class_name =  "fIsCorrectlyAssoc" # Target(class).
+DatasetName = "LambdaStar" # Input prefix, "OutputPrefix" in 04_HyperparameterTuning!!
+Class_name =  "fIsLStar" # Target(class).
  
 # Define/choose your features!
-FeaturesToTrain = ['fV0PA', 'fV0DCAToPVz', 'fV0NDuplicates']
+FeaturesToTrain = ['fDCADaughters', 'fLambdaAlpha', 'fLambdaDCANegPV', 'fLambdaDCAPosPV',
+                   'fLambdaQt', 'fPhotonAlpha', 'fPhotonCosPA', 'fPhotonDCADau', 
+                   'fPhotonDCANegPV', 'fPhotonDCAPosPV', 'fPhotonQt', 'fPhotonRadius', 'fOPAngle'] 
 
 # Loading Datasets
 Dataset = pd.read_parquet(MAIN_PATH+'Dataset/Processed/{}_Train.parquet'.format(DatasetName))
@@ -109,8 +111,8 @@ def objective(trial): # Optuna search space
         for train_index, test_index in kf.split(Features_DF, classes_DF):
 
             # Train test split
-            X_train, y_train = Dataset.drop(Class_name, axis=1).iloc[train_index], Dataset[Class_name].iloc[train_index]
-            X_test, y_test = Dataset.drop(Class_name, axis=1).iloc[test_index], Dataset[Class_name].iloc[test_index]
+            X_train, y_train = Features_DF.iloc[train_index], classes_DF.iloc[train_index]
+            X_test, y_test = Features_DF.iloc[test_index], classes_DF.iloc[test_index]
 
             model = XGBClassifier(**params)
             model.fit(X_train, y_train)

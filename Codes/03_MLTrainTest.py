@@ -45,7 +45,7 @@ t0 = time.time() # Initial time
 #---------------------------  MAIN CONFIGURATIONS -----------------------------
 
 ##----------------------- PATHS AND LOADING SETTINGS----------------------------
-MAIN_PATH = '/storage1/liveraro/ML_Strangeness/' # Project main directory path
+MAIN_PATH = '/home/oussama/O2WorkingDirectory/RunAnalysisLambdaStar/ML_Strangeness/' # Project main directory path
 RESULTS_PATH = MAIN_PATH + 'Results/'
 
 print('Which ML Run would you like to load?. Available Runs: \n', os.listdir(RESULTS_PATH))
@@ -95,7 +95,12 @@ print("Mean Absolute Error (Test sample):", mean_absolute_error(y_test.values.ra
 # ##--------------------------------- TEST --------------------------------------
 # Predictions:
 PredictionProb = BDT_Classifier.predict_proba(X_test)
-PredictionsDF = pd.DataFrame({'fV0pt':DatasetTest['fV0pt'].values.ravel(), 'Prediction':PredictionProb[:,1], 'GroundTruth':y_test.values.ravel()})
+
+PredictionsDF = pd.DataFrame({
+    'fIsLStar':DatasetTest['fIsLStar'].values.ravel(), 
+    'fLStarPt':DatasetTest['fLStarPt'].values.ravel(), 
+    'Prediction':PredictionProb[:,1], 
+    'GroundTruth':y_test.values.ravel()})
 
 # Saving predictions for analysis:
 PredictionsDF.to_parquet(RUN_PATH+"/Predictions.parquet")

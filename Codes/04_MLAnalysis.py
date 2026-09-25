@@ -41,7 +41,7 @@ t0 = time.time() # Initial time
 
 ##----------------------- PATHS AND LOADING SETTINGS----------------------------
 # Change these paths to ones in your own machine!
-MAIN_PATH = '/storage1/liveraro/ML_Strangeness/' # Project main directory path
+MAIN_PATH = '/home/oussama/O2WorkingDirectory/RunAnalysisLambdaStar/ML_Strangeness/' # Project main directory path
 RESULTS_PATH = MAIN_PATH + 'Results/'
 
 ##--------------------------- MASTER SWITCHES -----------------------------------
@@ -51,7 +51,7 @@ fPlotConfusionMatrix = True # if True, plots confusion matrix vs pT
 BestThreshold = 0.5
 
 fUseAnotherTestDataset = False # if True, uses another test dataset (not the one used in the training). If False, uses the same test dataset used in the training.
-DatasetTestName = '_AnalysisResults_treesForTest' 
+DatasetTestName = 'LambdaStar' 
 
 if not fUseAnotherTestDataset: DatasetTestName = '' # if you want to use the same test dataset used in the training, leave it empty
 
@@ -160,7 +160,7 @@ if fPlotSHAP:
 # -----------------------------------
 # Confusion matrix per pT 
 if fPlotConfusionMatrix:
-    pT_bins = [0.0, 0.5, 1., 2., 4., 15.]
+    pT_bins = [0.0, 30.0]
 
     for i in range(len(pT_bins)-1):
         pT_min = pT_bins[i]
@@ -168,7 +168,7 @@ if fPlotConfusionMatrix:
         
         # Filter predictions for the current pT bin
         
-        PredictionsDF_pT_bin = PredictionsDF[(PredictionsDF['fXiccPt'] >= pT_min) & (PredictionsDF['fXiccPt'] < pT_max)]
+        PredictionsDF_pT_bin = PredictionsDF[(PredictionsDF['fLStarPt'] >= pT_min) & (PredictionsDF['fLStarPt'] < pT_max)]
         PredictionsDF_pT_bin["Classification"] = 0
         PredictionsDF_pT_bin["Classification"][PredictionsDF_pT_bin.Prediction>= BestThreshold] = 1
 
@@ -190,7 +190,7 @@ if fPlotConfusionMatrix:
 # AUC vs pT Plot
 if fPlotAUCVspT:
     # Define list of pT bins
-    pT_bins = [0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0, 3.5, 4.0, 5.0]
+    pT_bins = [0.0,30.0]
 
 
     # Loop over pT bins and calculate AUC for each bin
@@ -200,7 +200,7 @@ if fPlotAUCVspT:
         pT_max = pT_bins[i+1]
         
         # Filter predictions for the current pT bin
-        PredictionsDF_pT_bin = PredictionsDF[(PredictionsDF['fV0pt'] >= pT_min) & (PredictionsDF['fV0pt'] < pT_max)]
+        PredictionsDF_pT_bin = PredictionsDF[(PredictionsDF['fLStarPt'] >= pT_min) & (PredictionsDF['fLStarPt'] < pT_max)]
         
         if len(PredictionsDF_pT_bin) > 0:  # Check if there are predictions in this bin
             auc = roc_auc_score(PredictionsDF_pT_bin['GroundTruth'], PredictionsDF_pT_bin['Prediction'])

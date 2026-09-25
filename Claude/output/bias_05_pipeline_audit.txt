@@ -1,0 +1,97 @@
+
+==============================================================================
+1. HOW MUCH OF THE DATA IS ACTUALLY USED
+==============================================================================
+  AO2DMerged_Bkg.root holds 280 dataframes.
+
+  Codes/01_ProcessData.py sets NRowsBkgRead = 2000000, and create_pd_df
+  applies it as a break AFTER each whole directory:
+
+      if n_rows_max > 0 and sum(len(d) for d in dataframesPerDirectory) >= n_rows_max:
+          break
+
+  so it stops after 5 of 280 dataframes (5329716 candidates).
+  That is ~1.8% of the file, and they are the FIRST 5 timeframes, not a
+  random draw: whatever run / fill / occupancy condition those timeframes
+  belong to is what the background class means.
+
+==============================================================================
+2. SAMPLE SIZES AND CLASS BALANCE
+==============================================================================
+  Train  n =  6930   signal =   630   background =  6300   S/B = 1:10
+  Val    n =   770   signal =    70   background =   700   S/B = 1:10
+  Test   n =  3300   signal =   300   background =  3000   S/B = 1:10
+
+  NSignal = 1000 was requested; 1396 true L* exist in the MC file.
+  The whole model rests on 1000 signal candidates, 630 of them in training.
+  No scale_pos_weight is set, so the 1:10 imbalance also means the confusion
+  matrix and any accuracy number at threshold 0.5 are dominated by background.
+
+==============================================================================
+3. THE SAME PHYSICAL V0 APPEARS IN TRAIN AND TEST
+==============================================================================
+  A candidate is a (Lambda V0, photon V0) pair.  One reconstructed Lambda is
+  paired with several photons, so several candidates share the same physical
+  Lambda.  train_test_split shuffles candidates, not V0s, so the identical
+  Lambda lands on both sides of the split and the test set is not
+  independent of the training set.
+
+  Identity is taken from fLambdaV0ID / fPhotonV0ID.  These are unambiguous
+  for the signal (the MC file is a single dataframe); in data they restart
+  per dataframe, so the background numbers below are quoted separately.
+
+  signal     Lambda :   630 train /   300 test,  59.3% of test candidates reuse a training Lambda
+  signal     photon :   630 train /   300 test,  56.0% of test candidates reuse a training photon
+  background Lambda :  6300 train /  3000 test,   4.5% of test candidates reuse a training Lambda
+  background photon :  6300 train /  3000 test,   4.3% of test candidates reuse a training photon
+
+  The leak is concentrated in the signal class -- the small class whose
+  recall drives the ROC curve.  Roughly three out of five "unseen" signal
+  candidates in the test set are a photon swapped onto a Lambda the model
+  already trained on, sharing all eight fLambda* features.
+
+  Background sharing is low only because 10000 candidates were drawn from
+  4.6 million available: collisions are rare by dilution, not by construction.
+
+  MC: 67689 candidates are built from only 859 distinct Lambda V0s
+      the 1396 true L* come from 644 distinct Lambda V0s and 651 distinct
+      photon V0s, i.e. only 1114 distinct (Lambda, photon) pairings.
+      230 pairings are written more than once (282 extra rows), once under the
+      L* and once under the anti-L* hypothesis, with slightly different
+      topology values -- so ~20% of the signal sample is the same
+      physical candidate counted twice.
+
+==============================================================================
+4. EXACT DUPLICATE CANDIDATES ACROSS THE SPLIT
+==============================================================================
+  test rows identical to a training row in all 16 features: 0 / 3300 (0.00%)
+
+==============================================================================
+5. WHAT THE LABEL ACTUALLY MEANS
+==============================================================================
+  fIsLStar = True  : MC candidate with |fPDGCode| == 3124
+  fIsLStar = False : DATA candidate with mass outside 1.45-1.59
+
+  Among the 1396 MC candidates labelled signal:
+    fLambdaIsCorrectlyAssoc    True  1124  False   272   (80.5% correctly associated)
+    fPhotonIsCorrectlyAssoc    True  1124  False   272   (80.5% correctly associated)
+
+  The probability plot in Results/Run 3 is labelled "Correctly Associated"
+  vs "Wrongly Associated".  That is not what was trained: the two classes
+  are "MC true L*" and "data mass sideband".  A candidate that is wrongly
+  associated in MC is not in the background class at all -- it is simply
+  discarded.  The plot therefore cannot show what its legend claims.
+
+==============================================================================
+6. MODEL CONFIGURATION
+==============================================================================
+  colsample_bytree = 0.0161  ->  0.26 of 16 features per tree
+  XGBoost clamps that to 1, so every tree in the ensemble sees exactly ONE
+  randomly chosen feature.  With max_depth = 2 the model is close to an
+  additive single-variable ensemble -- it cannot use correlations between
+  features, and the reported importance is spread almost at random.
+
+  Optuna ran 10 trials, scored on the validation set, and the best
+  configuration was then kept.  The validation AUC is therefore a selected
+  maximum, not an unbiased estimate; only the test set is unbiased, and
+  section 3 shows the test set is not independent either.
