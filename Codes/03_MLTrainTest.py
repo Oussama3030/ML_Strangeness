@@ -71,9 +71,26 @@ DatasetTest = pd.read_parquet(MAIN_PATH+'Dataset/Processed/{}_Test.parquet'.form
 X_test = DatasetTest[FeaturesToTrain]
 y_test = DatasetTest[[Class_name]]
 
+# Loading validation set: only monitored during training (learning curves), never fitted on
+DatasetVal = pd.read_parquet(MAIN_PATH+'Dataset/Processed/{}_Val.parquet'.format(DatasetName))
+X_val = DatasetVal[FeaturesToTrain]
+y_val = DatasetVal[[Class_name]]
+
 # ##--------------------------------- TRAINING ----------------------------------
 BDT_Classifier = XGBClassifier(**RunConfig['BDT'])
-BDT_Classifier.fit(X_train.values, y_train.values.ravel())
+BDT_Classifier.set_params(eval_metric=['logloss', 'auc']) # monitoring only: no early stopping, the fit is unchanged
+BDT_Classifier.fit(X_train.values, y_train.values.ravel(),
+                   eval_set=[(X_train.values, y_train.values.ravel()), (X_val.values, y_val.values.ravel())],
+                   verbose=False)
+
+# ##---------------------------- LEARNING CURVES --------------------------------
+# Train and validation metrics after each boosting iteration, plotted in 04_MLAnalysis.py
+EvalsResult = BDT_Classifier.evals_result()
+LearningCurvesDF = pd.DataFrame({'Iteration': np.arange(1, len(EvalsResult['validation_0']['logloss'])+1)})
+for SetName, SetKey in [('Train', 'validation_0'), ('Val', 'validation_1')]:
+    for Metric, Values in EvalsResult[SetKey].items():
+        LearningCurvesDF['{}_{}'.format(SetName, Metric)] = Values
+LearningCurvesDF.to_parquet(RUN_PATH+"/LearningCurves.parquet")
 
 # ##------------------------------- SAVING MODEL --------------------------------
 # Save trained model in JSON format
@@ -105,6 +122,17 @@ PredictionsDF = pd.DataFrame({
 # Saving predictions for analysis:
 PredictionsDF.to_parquet(RUN_PATH+"/Predictions.parquet")
 
+# Train-set predictions, for the overtraining check (train vs test output) in 04_MLAnalysis.py
+PredictionProbTrain = BDT_Classifier.predict_proba(X_train)
+
+PredictionsTrainDF = pd.DataFrame({
+    'fIsLStar':DatasetTrain['fIsLStar'].values.ravel(),
+    'fLStarPt':DatasetTrain['fLStarPt'].values.ravel(),
+    'Prediction':PredictionProbTrain[:,1],
+    'GroundTruth':y_train.values.ravel()})
+
+PredictionsTrainDF.to_parquet(RUN_PATH+"/PredictionsTrain.parquet")
+
 # ##------------------------------- SHAP VALUES --------------------------------
 # SHAP values for feature importance
 explainer = shap.TreeExplainer(BDT_Classifier)
@@ -112,6 +140,11 @@ shap_values = explainer.shap_values(X_test)
 # save shap values
 shap_values_df = pd.DataFrame(shap_values, columns=X_test.columns)
 shap_values_df.to_parquet(RUN_PATH+"/SHAPvalues.parquet")
+
+# Feature values of the same test candidates, row-aligned with SHAPvalues.parquet (beeswarm and
+# dependence plots need them). Class, pT and mass are not features: kept to colour the dependence plots.
+SHAPColumns = FeaturesToTrain + [c for c in [Class_name, 'fLStarPt', 'fLStarMass'] if c not in FeaturesToTrain]
+DatasetTest[SHAPColumns].reset_index(drop=True).to_parquet(RUN_PATH+"/SHAPFeatures.parquet")
 
 # End
 t1 = time.time() - t0

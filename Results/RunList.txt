@@ -4,3 +4,9 @@ Run 2: Example Run. Data and MC! MC pos/neg daughters swapped
 Run 3: Data: 10k , MC: 1k
 Run 4: Data: 10k , MC: 1k
 Run 5: Data: 20 , MC: 2.6k, removed lambda cospa, radius and lifetime
+Run 6: Data: 20 , MC: 2.6k, removed lambda cospa, radius and lifetime. Hard pt cut at 10GeV.
+Run 7: Data: 20 , MC: 2.6k, removed lambda cospa, radius and lifetime. Hard pt cut at 10GeV. rap/eta 08 , photon cr at 70, lambda at 60
+Run 8: Data: 20 , MC: 2.0k., removed lambda cospa, radius and lifetime. Hard pt cut at 10GeV. rap/eta 08 , photon cr at 70, lambda at 60. ntrial 40
+Run 9: Data: 20k , MC: 3.7k., removed lambda cospa, radius and lifetime. Hard pt cut at 10GeV. rap/eta 08 , photon cr at 70, lambda at 60. ntrial 40
+Run 10: Data: 20k , MC: 3.7k., removed lambda cospa, radius and lifetime. Hard pt cut at 10GeV. rap/eta 08 , photon cr at 70, lambda at 60. ntrial 40
+Run 11: Data: 20k , MC: 3.7k., removed lambda cospa, radius and lifetime. Hard pt cut at 10GeV. rap/eta 08 , photon cr at 70, lambda at 60. ntrial 40/ added arm vars

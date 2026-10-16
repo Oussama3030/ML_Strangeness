@@ -36,7 +36,7 @@ fSeparateAO2Ds = True    # else if true, merge signal and bacgkround ao2ds, then
                          # else, the entire input dataset is converted to an unique .parquet file
 
 # Number of signal and bkg candidates in the total dataset (before splitting)
-NSignal = 2600
+NSignal = 3793
 NBkg = 20000
 
 
@@ -64,6 +64,10 @@ MassWindowMax = 1.59
 NRowsSignalRead = 0
 NRowsBkgRead = 2000000
 
+# Only keep candidates with PtMin <= reco L* pT < PtMax (GeV/c), for both signal and background
+PtMin = 0.0
+PtMax = 10.0
+
 def add_signal_lstar(data_frame):
   if 'fPDGCode' not in data_frame.columns: # data: no MC table, class is set by hand later
     data_frame[Class_name] = False
@@ -81,6 +85,27 @@ def add_opening_angle(data_frame):
   arg = np.divide(dot, ptot, out=np.zeros_like(dot, dtype=float), where=ptot > 0)
   arg = np.clip(arg, -1.0, 1.0)
   data_frame['fOPAngle'] = np.arccos(arg)
+  return data_frame
+
+def add_armenteros(data_frame):
+  photonPx = data_frame['fPhotonPx'].to_numpy(dtype=np.float64)
+  photonPy = data_frame['fPhotonPy'].to_numpy(dtype=np.float64)
+  photonPz = data_frame['fPhotonPz'].to_numpy(dtype=np.float64)
+  lambdaPx = data_frame['fLambdaPx'].to_numpy(dtype=np.float64)
+  lambdaPy = data_frame['fLambdaPy'].to_numpy(dtype=np.float64)
+  lambdaPz = data_frame['fLambdaPz'].to_numpy(dtype=np.float64)
+  px = photonPx + lambdaPx
+  py = photonPy + lambdaPy
+  pz = photonPz + lambdaPz
+
+  momTot = np.sqrt(px**2 + py**2 + pz**2)
+  lQlNeg = (lambdaPx * px + lambdaPy * py + lambdaPz * pz) / momTot
+  lQlPos = (photonPx * px + photonPy * py + photonPz * pz) / momTot
+  data_frame['fLStarAlpha'] = ((lQlPos - lQlNeg) / (lQlPos + lQlNeg)).astype(np.float32)
+
+  momTot2 = px**2 + py**2 + pz**2
+  dp = lambdaPx * px + lambdaPy * py + lambdaPz * pz
+  data_frame['fLStarQtArm'] = np.sqrt(lambdaPx**2 + lambdaPy**2 + lambdaPz**2 - dp * dp / momTot2).astype(np.float32)
   return data_frame
 
 def add_lstar_mass(data_frame):
@@ -109,6 +134,9 @@ def filter_df(data_frame):
   Geometry = 1
   data_frame = data_frame[(data_frame.fLUTConfigId == Geometry)]
   """
+  nBefore = len(data_frame)
+  data_frame = data_frame[(data_frame['fLStarPt'] >= PtMin) & (data_frame['fLStarPt'] < PtMax)]
+  print('[INFO]: pT cut {} <= pT < {} GeV/c keeps {} of {} candidates'.format(PtMin, PtMax, len(data_frame), nBefore))
   return data_frame
 
 def create_pd_df(dataset_name, n_rows_max=0):
@@ -165,6 +193,7 @@ def create_pd_df(dataset_name, n_rows_max=0):
                      'Add "AOD/SIGMA0CORES/0" to the OutputDirector and reproduce this AO2D.'.format(dataset_name))
     
   dataframeFinal = add_opening_angle(dataframeFinal)
+  dataframeFinal = add_armenteros(dataframeFinal)
   dataframeFinal = add_signal_lstar(dataframeFinal)
   dataframeFinal = add_lstar_mass(dataframeFinal)
   dataframeFinal = add_lstar_pt(dataframeFinal)

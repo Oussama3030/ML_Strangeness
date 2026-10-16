@@ -41,12 +41,12 @@ t0 = time.time() # Initial time
 #---------------------------  MAIN CONFIGURATIONS -----------------------------
 ##--------------------------------- FLAGS ------------------------------------
 fUseOptuna = True # if False uses GridSearchCV for hyperparameters search
-fUseOptunawithCV = False # if True uses k-fold cross validation with optuna (it is a little bit slow!)
+fUseOptunawithCV = True # if True uses k-fold cross validation with optuna (it is a little bit slow!)
 fCreateNewrun = True # if True, creates a directory in 'ML_Strangeness/Workflow_Scrips/ML_Analysis/Results/' to save ML run configurations and results 
-NOptunaTrials = 10 # number of Optuna trials - modify it according to your needs (and resources)! 
+NOptunaTrials = 40 # number of Optuna trials - modify it according to your needs (and resources)! 
 
 # Please, include a short description of this Run:
-RunDescription = "Data: 20 , MC: 2.6k, removed lambda cospa, radius and lifetime"
+RunDescription = "Data: 20k , MC: 3.7k., removed lambda cospa, radius and lifetime. Hard pt cut at 10GeV. rap/eta 08 , photon cr at 70, lambda at 60. ntrial 40/ added arm vars"
 
 ##--------------------------------- PATHS ------------------------------------
 # Change these paths to ones in your own machine!
@@ -59,9 +59,9 @@ DatasetName = "LambdaStar" # Input prefix, "OutputPrefix" in 04_HyperparameterTu
 Class_name =  "fIsLStar" # Target(class).
  
 # Define/choose your features!
-FeaturesToTrain = ['fDCADaughters', 'fLambdaAlpha', 'fLambdaDCANegPV', 'fLambdaDCAPosPV',
+FeaturesToTrain = ['fLambdaDCADau', 'fLambdaAlpha', 'fLambdaDCANegPV', 'fLambdaDCAPosPV',
                    'fLambdaQt', 'fPhotonAlpha', 'fPhotonCosPA', 'fPhotonDCADau', 
-                   'fPhotonDCANegPV', 'fPhotonDCAPosPV', 'fPhotonQt', 'fPhotonRadius', 'fOPAngle'] 
+                   'fPhotonDCANegPV', 'fPhotonDCAPosPV', 'fPhotonQt', 'fPhotonRadius', 'fOPAngle', 'fLStarQtArm', 'fLStarAlpha'] 
 
 # Loading Datasets
 Dataset = pd.read_parquet(MAIN_PATH+'Dataset/Processed/{}_Train.parquet'.format(DatasetName))

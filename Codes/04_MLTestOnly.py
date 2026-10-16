@@ -43,7 +43,7 @@ import time
 t0 = time.time() # Initial time
 
 ##----------------------- PATHS AND LOADING SETTINGS----------------------------
-MAIN_PATH = '/storage1/liveraro/ML_Strangeness/' # Project main directory path
+MAIN_PATH = '/home/oussama/O2WorkingDirectory/RunAnalysisLambdaStar/ML_Strangeness/'
 RESULTS_PATH = MAIN_PATH + 'Results/'
 
 print('Which ML Run would you like to load?. Available Runs: \n', os.listdir(RESULTS_PATH))
@@ -51,16 +51,16 @@ RunNumber = str (input())
 RUN_PATH = RESULTS_PATH+'Run {}'.format(RunNumber)
 # Loading dict with predictions
 with open(RUN_PATH+"/RunConfig.pkl", 'rb') as f:
-    RunConfig = pickle.load(f)
+    RunConfig = pickle.load(f) 
 
 # ##--------------------------------- DATASET ----------------------------------
 DatasetName = RunConfig['Dataset']['DatasetName']
-DatasetTestName = 'AnalysisResults_treesForTest'
+DatasetTestName = 'LambdaStar_Test'
 FeaturesToTrain = RunConfig['Dataset']['Features']
 Class_name = RunConfig['Dataset']['Class']
 
 # Loading test test
-DatasetTest = pd.read_parquet('{}.parquet'.format(DatasetTestName))
+DatasetTest = pd.read_parquet(MAIN_PATH + 'Dataset/Processed/{}.parquet'.format(DatasetTestName))
 X_test = DatasetTest[FeaturesToTrain]
 y_test = DatasetTest[[Class_name]]
 
@@ -72,7 +72,7 @@ BDT_Classifier.load_model(RUN_PATH+"/{}_BDTModel.json".format(DatasetName))
 # ##--------------------------------- TEST --------------------------------------
 # Predictions:
 PredictionProb = BDT_Classifier.predict_proba(X_test)
-PredictionsDF = pd.DataFrame({'fV0pt':DatasetTest['fV0pt'].values.ravel(), 'Prediction':PredictionProb[:,1], 'GroundTruth':y_test.values.ravel()})
+PredictionsDF = pd.DataFrame({'fLStarPt':DatasetTest['fLStarPt'].values.ravel(), 'Prediction':PredictionProb[:,1], 'GroundTruth':y_test.values.ravel()})
 
 # Saving predictions for analysis:
 PredictionsDF.to_parquet(RUN_PATH+"/Predictions_{}.parquet".format(DatasetTestName))

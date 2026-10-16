@@ -22,18 +22,29 @@
 #____________________________
 # Imports
 import ROOT
+import pickle
+import os
 
 #---------------------------  MAIN CONFIGURATIONS ----------------------------
 sor = 1695750422702
 eor = 1698617337860
 
-onnx_file_name = "BDTModel"
+MAIN_PATH = '/home/oussama/O2WorkingDirectory/RunAnalysisLambdaStar/ML_Strangeness/'
+RESULTS_PATH = MAIN_PATH + 'Results/'
+
+print('Which ML Run would you like to load?. Available Runs: \n', os.listdir(RESULTS_PATH))
+RunNumber = str (input())
+RUN_PATH = RESULTS_PATH+'Run {}'.format(RunNumber)
+# Loading dict with predictions
+with open(RUN_PATH+"/RunConfig.pkl", 'rb') as f:
+    RunConfig = pickle.load(f)
+
+onnx_file_name = RUN_PATH +"/LambdaStar_BDTModel"
 onnx_file_path = onnx_file_name+".onnx"
-description = onnx_file_name+"first test!"
+description = onnx_file_name+" first test!"
 
-ccdb_path_production = "Users/g/gsetouel/MLModels2"
+ccdb_path_production = "Users/o/obenchik/MLModels/BDTModelTestLStar/Binary/Run11"
 ccdb_url_production = "https://alice-ccdb.cern.ch"
-
 
 #----------------------------------  SETUP -----------------------------------
 ccdb_path = ccdb_path_production
@@ -47,7 +58,7 @@ def uploadONNXToCCDB(description, onnx_file_path, start, stop):
 
     metadata.clear()
     metadata.insert(ROOT.std.pair(ROOT.std.string, ROOT.std.string)("Description", "%s" % description))
-    metadata.insert(ROOT.std.pair(ROOT.std.string, ROOT.std.string)("Author", "Gianni Shigeru Setoue Liveraro"))
+    metadata.insert(ROOT.std.pair(ROOT.std.string, ROOT.std.string)("Author", "Oussama Benchikhi"))
 
     # Read ONNX file as binary
     with open(onnx_file_path, 'rb') as file:
